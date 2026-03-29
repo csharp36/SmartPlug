@@ -21,6 +21,17 @@ Complete guide to assembling and testing SmartPlug before connecting to your pum
 
 **Total: ~$66-73**
 
+### For Relay-Controlled Outlet (Recommended)
+
+| Component | Price | Purpose |
+|-----------|-------|---------|
+| Single-gang metal electrical box | $3 | Houses the outlet |
+| 15A grounded outlet | $3 | Standard 3-prong outlet |
+| Outlet cover plate | $1 | Safety cover |
+| 14 AWG electrical wire (3 ft) | $3 | Hot, neutral, ground |
+| Wire nuts | $2 | Secure connections |
+| Cord with plug (14 AWG, 3-prong) | $8 | Power input to the box |
+
 ### Optional but Recommended
 
 | Component | Price | Purpose |
@@ -30,6 +41,25 @@ Complete guide to assembling and testing SmartPlug before connecting to your pum
 | Pipe Insulation Foam | $5 | Cover sensors for accuracy |
 | Project Enclosure | $10 | Protect electronics |
 | Terminal Blocks | $5 | Easier wire connections |
+
+## How the Pump Control Works
+
+**The Big Picture:** Your Taco pump has a normal 3-prong plug. SmartPlug controls a relay that acts like an automated light switch - it turns power on/off to an outlet where your pump is plugged in.
+
+```
+                                    ┌─────────────────┐
+   Wall Outlet ──────► SmartPlug ──►│ Controlled      │◄──── Taco Pump
+   (always on)        Relay Box     │ Outlet          │      (plugs in here)
+                                    └─────────────────┘
+```
+
+**When the relay is OFF:** No power reaches the controlled outlet → Pump is off
+**When the relay is ON:** Power flows to the controlled outlet → Pump runs
+
+This is safer than cutting the pump's cord because:
+- Your pump stays completely stock (warranty intact)
+- Easy to unplug and use pump normally if needed
+- Standard electrical work, no splicing appliance cords
 
 ## Wiring Diagram
 
@@ -61,14 +91,15 @@ Complete guide to assembling and testing SmartPlug before connecting to your pum
     │  │ YELLOW (PULSE)──┘             │
     │  └─────────────────┘             │
     │                                  │
-    │  Relay Module                    │
+    │  Relay Module (controls outlet)  │
     │  ┌─────────────────┐             │
     │  │ VCC ────────────┼─────────────┤ (from 5V)
     │  │ GND ────────────┼─────────────┤ (to GND)
     │  │ IN ─────────────┘             │
     │  │                               │
-    │  │ COM ──── To Pump Hot Wire     │
-    │  │ NO ───── From Wall Hot Wire   │
+    │  │ HIGH-VOLTAGE SIDE:            │
+    │  │ COM ──── Hot to Outlet        │
+    │  │ NO ───── Hot from Cord/Wall   │
     │  │ NC ───── (unused)             │
     │  └─────────────────┘             │
     │                                  │
@@ -272,18 +303,49 @@ sudo systemctl restart smartplug
 - [ ] Ground all metal parts
 - [ ] Keep low-voltage (Pi) and high-voltage (pump) wiring separate
 
-### Wiring Pump to Relay
+### Building the Relay-Controlled Outlet Box
+
+You're building a small outlet box that the relay controls. The pump plugs into this outlet.
 
 ```
-Wall Outlet (120V AC)
-├── Hot (black) ──────────────► Relay NO terminal
-│                                    │
-│                              Relay COM terminal ──► Pump Hot wire
-│
-├── Neutral (white) ─────────────────────────────► Pump Neutral wire
-│
-└── Ground (green) ──────────────────────────────► Pump Ground wire
+┌─────────────────────────────────────────────────────────────────────┐
+│                        RELAY-CONTROLLED OUTLET BOX                  │
+│                                                                     │
+│   Power Cord                    Single-Gang                         │
+│   (to wall outlet)              Electrical Box         Outlet       │
+│        │                        ┌──────────┐         ┌───────┐     │
+│        │                        │          │         │ ═══   │     │
+│   ┌────┴────┐                   │  RELAY   │         │  ○ ○  │◄─── Pump
+│   │ BLACK ──┼───────────────────┼─► NO     │         │ ═══   │     plugs
+│   │ (hot)   │                   │          │         └───┬───┘     here
+│   │         │                   │   COM ───┼───────────►─┤ (hot)   │
+│   │ WHITE ──┼───────────────────┼──────────┼───────────►─┤(neutral)│
+│   │(neutral)│                   │          │         ┌───┴───┐     │
+│   │         │                   └──────────┘         │ ground│     │
+│   │ GREEN ──┼────────────────────────────────────────┴───────┘     │
+│   │(ground) │                                                       │
+│   └─────────┘                                                       │
+│                                                                     │
+│   The relay acts like a light switch for the hot wire only.        │
+│   Neutral and ground pass straight through to the outlet.          │
+└─────────────────────────────────────────────────────────────────────┘
 ```
+
+**Wiring Steps:**
+
+1. **Mount outlet in electrical box**
+2. **Connect the power cord:**
+   - BLACK (hot) → Relay NO terminal
+   - WHITE (neutral) → Outlet silver screw (directly)
+   - GREEN (ground) → Outlet ground screw + box ground screw
+3. **Connect relay to outlet:**
+   - Relay COM terminal → Outlet brass screw (hot side)
+4. **Double-check:**
+   - Hot goes through relay (NO → COM → outlet brass)
+   - Neutral goes direct to outlet silver screw
+   - Ground goes direct to outlet ground + box
+
+**DANGER: 120V AC can kill. If you're not comfortable with electrical work, hire an electrician.**
 
 ### Post-Installation Verification
 
@@ -335,6 +397,49 @@ sudo journalctl -u smartplug -f
 # Check port
 sudo ss -tlnp | grep 8080
 ```
+
+## Enclosure Options
+
+You need enclosures for two things:
+1. **Low-voltage electronics** (Pi, relay module control side)
+2. **High-voltage relay box** (the outlet box described above)
+
+### Option A: Two Separate Enclosures (Recommended)
+
+**For the Pi + relay module:**
+- Any project box that fits (search "Raspberry Pi Zero project case")
+- Examples: Hammond 1591XXSBK (~$8), or 3D print your own
+- Drill holes for: USB power, sensor wires, relay control wire
+
+**For the outlet:**
+- Standard metal single-gang electrical box ($3 at hardware store)
+- Use a weatherproof box if near water heater
+
+This keeps low-voltage (safe) and high-voltage (dangerous) completely separate.
+
+### Option B: All-in-One Enclosure (Advanced)
+
+A single larger enclosure with internal separation:
+- Search: "Junction box with DIN rail" or "electrical enclosure"
+- Must have proper separation between low and high voltage sections
+- Requires more careful wiring
+
+### Option C: 3D Printed Custom Enclosure
+
+STL files for a custom SmartPlug enclosure will be available in the `hardware/` directory (coming soon). Features:
+- Snap-fit lid
+- Wall mount holes
+- Ventilation slots
+- Cable glands for wires
+
+### Mounting Location
+
+Install near your water heater where:
+- WiFi signal is adequate
+- Sensor wires can reach hot outlet and return pipes
+- Flow meter can be installed in cold water inlet
+- Pump's plug can reach the controlled outlet
+- Protected from water splashes
 
 ## Maintenance
 
