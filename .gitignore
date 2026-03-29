@@ -1,0 +1,39 @@
+# Binaries
+smartplug
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Build output
+build/
+dist/
+
+# Test artifacts
+coverage.out
+coverage.html
+*.test
+*.prof
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Config with secrets (keep example)
+configs/smartplug.local.yaml
+
+# Runtime data
+*.log
+*.pid
+
+# Temporary files
+tmp/
+temp/

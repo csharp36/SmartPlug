@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SmartPlug - Schedule</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-brand">SmartPlug</div>
+        <div class="nav-links">
+            <a href="/">Dashboard</a>
+            <a href="/schedule" class="active">Schedule</a>
+            <a href="/settings">Settings</a>
+        </div>
+    </nav>
+
+    <main class="container">
+        <section class="schedule-section">
+            <div class="section-header">
+                <h2>Schedule</h2>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="schedule-enabled" {{if .Enabled}}checked{{end}}>
+                    <span class="toggle-slider"></span>
+                    <span class="toggle-label">{{if .Enabled}}Enabled{{else}}Disabled{{end}}</span>
+                </label>
+            </div>
+
+            <div class="schedule-list">
+                <h3>Manual Schedules</h3>
+                {{if .Slots}}
+                <div class="slot-grid">
+                    {{range .Slots}}
+                    <div class="slot-card {{if .Enabled}}enabled{{else}}disabled{{end}}" data-id="{{.ID}}">
+                        <div class="slot-time">
+                            <span class="time-start">{{.Start}}</span>
+                            <span class="time-sep">-</span>
+                            <span class="time-end">{{.End}}</span>
+                        </div>
+                        <div class="slot-days">
+                            {{range $i, $d := .Days}}
+                            <span class="day-badge">{{dayName $d}}</span>
+                            {{end}}
+                        </div>
+                        <div class="slot-actions">
+                            <button class="btn btn-sm btn-toggle" onclick="toggleSlot('{{.ID}}')">
+                                {{if .Enabled}}Disable{{else}}Enable{{end}}
+                            </button>
+                            <button class="btn btn-sm btn-danger" onclick="deleteSlot('{{.ID}}')">Delete</button>
+                        </div>
+                    </div>
+                    {{end}}
+                </div>
+                {{else}}
+                <p class="empty-state">No manual schedules configured</p>
+                {{end}}
+
+                <button class="btn btn-primary" id="btn-add-slot" onclick="showAddSlotModal()">
+                    <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
+                        <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
+                    </svg>
+                    Add Schedule
+                </button>
+            </div>
+
+            {{if .LearningEnabled}}
+            <div class="learning-section">
+                <h3>Learned Schedules</h3>
+                {{if .LearnedSlots}}
+                <div class="slot-grid">
+                    {{range .LearnedSlots}}
+                    <div class="slot-card learned {{if .Enabled}}enabled{{else}}disabled{{end}}">
+                        <div class="slot-badge">Learned</div>
+                        <div class="slot-time">
+                            <span class="time-start">{{.Start}}</span>
+                            <span class="time-sep">-</span>
+                            <span class="time-end">{{.End}}</span>
+                        </div>
+                        <div class="slot-days">
+                            {{range .Days}}
+                            <span class="day-badge">{{dayName .}}</span>
+                            {{end}}
+                        </div>
+                    </div>
+                    {{end}}
+                </div>
+                {{else}}
+                <p class="empty-state">No patterns learned yet</p>
+                {{end}}
+
+                {{if .LearningStats}}
+                <div class="learning-stats">
+                    <h4>Learning Statistics</h4>
+                    <div class="stats-grid">
+                        <div class="stat-item">
+                            <span class="stat-value">{{.LearningStats.DaysOfData}}</span>
+                            <span class="stat-label">Days of Data</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-value">{{.LearningStats.TotalEvents}}</span>
+                            <span class="stat-label">Total Events</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-value">{{.LearningStats.PatternCount}}</span>
+                            <span class="stat-label">Patterns Found</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-value {{if .LearningStats.VacationMode}}active{{end}}">{{if .LearningStats.VacationMode}}Yes{{else}}No{{end}}</span>
+                            <span class="stat-label">Vacation Mode</span>
+                        </div>
+                    </div>
+                    <button class="btn btn-secondary" onclick="clearLearning()">Clear Learning History</button>
+                </div>
+                {{end}}
+            </div>
+            {{end}}
+        </section>
+    </main>
+
+    <!-- Add Slot Modal -->
+    <div class="modal" id="add-slot-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Add Schedule</h3>
+                <button class="modal-close" onclick="hideAddSlotModal()">&times;</button>
+            </div>
+            <form id="add-slot-form" onsubmit="addSlot(event)">
+                <div class="form-group">
+                    <label for="slot-start">Start Time</label>
+                    <input type="time" id="slot-start" required>
+                </div>
+                <div class="form-group">
+                    <label for="slot-end">End Time</label>
+                    <input type="time" id="slot-end" required>
+                </div>
+                <div class="form-group">
+                    <label>Days</label>
+                    <div class="day-selector">
+                        <label><input type="checkbox" name="days" value="0"> Sun</label>
+                        <label><input type="checkbox" name="days" value="1" checked> Mon</label>
+                        <label><input type="checkbox" name="days" value="2" checked> Tue</label>
+                        <label><input type="checkbox" name="days" value="3" checked> Wed</label>
+                        <label><input type="checkbox" name="days" value="4" checked> Thu</label>
+                        <label><input type="checkbox" name="days" value="5" checked> Fri</label>
+                        <label><input type="checkbox" name="days" value="6"> Sat</label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="hideAddSlotModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Add</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="/static/js/app.js"></script>
+    <script>
+        function showAddSlotModal() {
+            document.getElementById('add-slot-modal').classList.add('active');
+        }
+
+        function hideAddSlotModal() {
+            document.getElementById('add-slot-modal').classList.remove('active');
+        }
+
+        async function addSlot(event) {
+            event.preventDefault();
+            const form = event.target;
+            const start = document.getElementById('slot-start').value;
+            const end = document.getElementById('slot-end').value;
+            const dayCheckboxes = form.querySelectorAll('input[name="days"]:checked');
+            const days = Array.from(dayCheckboxes).map(cb => parseInt(cb.value));
+
+            if (days.length === 0) {
+                alert('Please select at least one day');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/schedule/slots', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ start, end, days, enabled: true })
+                });
+
+                if (response.ok) {
+                    location.reload();
+                } else {
+                    const data = await response.json();
+                    alert(data.error || 'Failed to add schedule');
+                }
+            } catch (err) {
+                alert('Error adding schedule: ' + err.message);
+            }
+        }
+
+        async function deleteSlot(id) {
+            if (!confirm('Delete this schedule?')) return;
+
+            try {
+                const response = await fetch(`/api/schedule/slots?id=${id}`, {
+                    method: 'DELETE'
+                });
+
+                if (response.ok) {
+                    location.reload();
+                } else {
+                    const data = await response.json();
+                    alert(data.error || 'Failed to delete schedule');
+                }
+            } catch (err) {
+                alert('Error deleting schedule: ' + err.message);
+            }
+        }
+
+        async function toggleSlot(id) {
+            // Toggle implementation would go here
+            location.reload();
+        }
+
+        async function clearLearning() {
+            if (!confirm('Clear all learning history? This cannot be undone.')) return;
+
+            try {
+                const response = await fetch('/api/learning/clear', {
+                    method: 'POST'
+                });
+
+                if (response.ok) {
+                    location.reload();
+                } else {
+                    const data = await response.json();
+                    alert(data.error || 'Failed to clear history');
+                }
+            } catch (err) {
+                alert('Error: ' + err.message);
+            }
+        }
+
+        // Toggle schedule enabled
+        document.getElementById('schedule-enabled').addEventListener('change', async function() {
+            try {
+                await fetch('/api/schedule', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ enabled: this.checked })
+                });
+                location.reload();
+            } catch (err) {
+                alert('Error: ' + err.message);
+                this.checked = !this.checked;
+            }
+        });
+    </script>
+</body>
+</html>

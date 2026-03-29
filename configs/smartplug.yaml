@@ -1,0 +1,47 @@
+hardware:
+    onewire_gpio: 4
+    relay_gpio: 17
+    flowmeter_gpio: 27
+sensors:
+    hot_outlet_id: 28-abc123
+    return_line_id: 28-def456
+    poll_interval: 2
+pump:
+    start_threshold: 12
+    stop_threshold: 8
+    max_runtime_minutes: 15
+    cooldown_minutes: 5
+    min_temperature: 40
+flowmeter:
+    enabled: true
+    pulses_per_liter: 500
+    trigger_threshold: 5
+    debounce_ms: 50
+    demand_timeout: 45
+schedule:
+    enabled: true
+    slots: []
+    learning:
+        enabled: true
+        min_days: 7
+        vacation_timeout_hours: 24
+web:
+    address: :8080
+    https_enabled: false
+    cert_file: ""
+    key_file: ""
+mqtt:
+    enabled: true
+    broker: tcp://localhost:1883
+    username: ""
+    password: ""
+    topic_prefix: smartplug
+    ha_discovery: true
+    ha_discovery_prefix: homeassistant
+    client_id: ""
+logging:
+    level: info
+    file: /var/log/smartplug.log
+    usage_history_file: /var/lib/smartplug/usage.json
+system:
+    data_dir: /var/lib/smartplug

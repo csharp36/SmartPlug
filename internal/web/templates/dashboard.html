@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>SmartPlug - Hot Water Controller</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="manifest" href="/static/manifest.json">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-brand">SmartPlug</div>
+        <div class="nav-links">
+            <a href="/" class="active">Dashboard</a>
+            <a href="/schedule">Schedule</a>
+            <a href="/settings">Settings</a>
+        </div>
+    </nav>
+
+    <main class="container">
+        <section class="status-section">
+            <h2>System Status</h2>
+
+            <div class="status-grid">
+                <div class="status-card pump-card {{if .PumpRunning}}active{{end}}">
+                    <div class="card-icon">
+                        <svg viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                        </svg>
+                    </div>
+                    <div class="card-content">
+                        <h3>Pump</h3>
+                        <p class="status-value" id="pump-state">{{.PumpState}}</p>
+                        <p class="status-label" id="pump-trigger">{{if .PumpRunning}}Trigger: {{.LastTrigger}}{{else}}Idle{{end}}</p>
+                    </div>
+                    <div class="card-indicator {{if .PumpRunning}}on{{else}}off{{end}}"></div>
+                </div>
+
+                <div class="status-card temp-card">
+                    <div class="card-icon hot">
+                        <svg viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M15 13V5c0-1.66-1.34-3-3-3S9 3.34 9 5v8c-1.21.91-2 2.37-2 4 0 2.76 2.24 5 5 5s5-2.24 5-5c0-1.63-.79-3.09-2-4zm-4-8c0-.55.45-1 1-1s1 .45 1 1h-1v1h1v2h-1v1h1v2h-2V5z"/>
+                        </svg>
+                    </div>
+                    <div class="card-content">
+                        <h3>Hot Outlet</h3>
+                        <p class="status-value temp" id="temp-hot">{{if .HotValid}}{{printf "%.1f" .HotTemperature}}°F{{else}}--{{end}}</p>
+                    </div>
+                </div>
+
+                <div class="status-card temp-card">
+                    <div class="card-icon cold">
+                        <svg viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M15 13V5c0-1.66-1.34-3-3-3S9 3.34 9 5v8c-1.21.91-2 2.37-2 4 0 2.76 2.24 5 5 5s5-2.24 5-5c0-1.63-.79-3.09-2-4zm-4-8c0-.55.45-1 1-1s1 .45 1 1h-1v1h1v2h-1v1h1v2h-2V5z"/>
+                        </svg>
+                    </div>
+                    <div class="card-content">
+                        <h3>Return Line</h3>
+                        <p class="status-value temp" id="temp-return">{{if .ReturnValid}}{{printf "%.1f" .ReturnTemperature}}°F{{else}}--{{end}}</p>
+                    </div>
+                </div>
+
+                <div class="status-card diff-card">
+                    <div class="card-icon">
+                        <svg viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/>
+                        </svg>
+                    </div>
+                    <div class="card-content">
+                        <h3>Differential</h3>
+                        <p class="status-value" id="temp-diff">{{if and .HotValid .ReturnValid}}{{printf "%.1f" .Differential}}°F{{else}}--{{end}}</p>
+                    </div>
+                </div>
+
+                {{if .FlowEnabled}}
+                <div class="status-card flow-card {{if .FlowActive}}active{{end}}">
+                    <div class="card-icon">
+                        <svg viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M12 2c-5.33 4.55-8 8.48-8 11.8 0 4.98 3.8 8.2 8 8.2s8-3.22 8-8.2c0-3.32-2.67-7.25-8-11.8zm0 18c-3.35 0-6-2.57-6-6.2 0-2.34 1.95-5.44 6-9.14 4.05 3.7 6 6.79 6 9.14 0 3.63-2.65 6.2-6 6.2z"/>
+                        </svg>
+                    </div>
+                    <div class="card-content">
+                        <h3>Flow</h3>
+                        <p class="status-value" id="flow-state">{{if .FlowActive}}Active{{else}}Idle{{end}}</p>
+                    </div>
+                    <div class="card-indicator {{if .FlowActive}}on{{else}}off{{end}}"></div>
+                </div>
+                {{end}}
+
+                <div class="status-card schedule-card {{if .InSchedule}}active{{end}}">
+                    <div class="card-icon">
+                        <svg viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/>
+                        </svg>
+                    </div>
+                    <div class="card-content">
+                        <h3>Schedule</h3>
+                        <p class="status-value" id="schedule-state">{{if .ScheduleEnabled}}{{if .InSchedule}}Active{{else}}Enabled{{end}}{{else}}Disabled{{end}}</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="control-section">
+            <h2>Controls</h2>
+
+            <div class="control-grid">
+                <button class="btn btn-primary btn-large" id="btn-heat-now" {{if .PumpRunning}}disabled{{end}}>
+                    <svg viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M13.5.67s.74 2.65.74 4.8c0 2.06-1.35 3.73-3.41 3.73-2.07 0-3.63-1.67-3.63-3.73l.03-.36C5.21 7.51 4 10.62 4 14c0 4.42 3.58 8 8 8s8-3.58 8-8C20 8.61 17.41 3.8 13.5.67zM11.71 19c-1.78 0-3.22-1.4-3.22-3.14 0-1.62 1.05-2.76 2.81-3.12 1.77-.36 3.6-1.21 4.62-2.58.39 1.29.59 2.65.59 4.04 0 2.65-2.15 4.8-4.8 4.8z"/>
+                    </svg>
+                    Heat Now
+                </button>
+
+                <button class="btn btn-secondary" id="btn-stop" {{if not .PumpRunning}}disabled{{end}}>
+                    <svg viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M6 6h12v12H6z"/>
+                    </svg>
+                    Stop
+                </button>
+
+                <button class="btn {{if .PumpEnabled}}btn-success{{else}}btn-danger{{end}}" id="btn-toggle-enable">
+                    <svg viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M13 3h-2v10h2V3zm4.83 2.17l-1.42 1.42C17.99 7.86 19 9.81 19 12c0 3.87-3.13 7-7 7s-7-3.13-7-7c0-2.19 1.01-4.14 2.58-5.42L6.17 5.17C4.23 6.82 3 9.26 3 12c0 4.97 4.03 9 9 9s9-4.03 9-9c0-2.74-1.23-5.18-3.17-6.83z"/>
+                    </svg>
+                    {{if .PumpEnabled}}Enabled{{else}}Disabled{{end}}
+                </button>
+            </div>
+        </section>
+
+        <section class="info-section">
+            <h2>Quick Info</h2>
+            <div class="info-grid">
+                <div class="info-item">
+                    <span class="info-label">Controller State</span>
+                    <span class="info-value" id="controller-state">{{.PumpState}}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Last Trigger</span>
+                    <span class="info-value" id="last-trigger">{{.LastTrigger}}</span>
+                </div>
+                {{if .PumpRunning}}
+                <div class="info-item">
+                    <span class="info-label">Runtime</span>
+                    <span class="info-value" id="runtime">{{printf "%.0f" .RuntimeSeconds}}s</span>
+                </div>
+                {{end}}
+            </div>
+        </section>
+    </main>
+
+    <script src="/static/js/app.js"></script>
+    <script>
+        // Initialize dashboard with auto-refresh
+        initDashboard();
+    </script>
+</body>
+</html>
