@@ -23,14 +23,37 @@ Complete guide to assembling and testing SmartPlug before connecting to your pum
 
 ### For Relay-Controlled Outlet (Recommended)
 
-| Component | Price | Purpose |
-|-----------|-------|---------|
-| Single-gang metal electrical box | $3 | Houses the outlet |
-| 15A grounded outlet | $3 | Standard 3-prong outlet |
-| Outlet cover plate | $1 | Safety cover |
-| 14 AWG electrical wire (3 ft) | $3 | Hot, neutral, ground |
-| Wire nuts | $2 | Secure connections |
-| Cord with plug (14 AWG, 3-prong) | $8 | Power input to the box |
+| Component | Example Part | Price | Where to Buy |
+|-----------|--------------|-------|--------------|
+| Single-gang metal electrical box | Raco 8660 or "4in Square Box" | ~$2-3 | [Home Depot](https://www.homedepot.com/s/single%20gang%20metal%20box) |
+| 15A duplex outlet | Leviton 5320-W or similar | ~$1-3 | [Home Depot](https://www.homedepot.com/s/15%20amp%20duplex%20outlet) |
+| Outlet cover plate | Leviton 88003 | ~$0.50 | [Home Depot](https://www.homedepot.com/s/duplex%20outlet%20cover) |
+| 14 AWG electrical wire (3 ft) | THHN or Romex scrap | ~$3 | [Home Depot](https://www.homedepot.com/s/14%20awg%20wire) |
+| Wire nuts (assorted) | Ideal 30-072 | ~$2-5 | [Home Depot](https://www.homedepot.com/s/wire%20nuts) |
+| Power cord with plug (14 AWG, 3-prong) | 6ft appliance cord | ~$8-12 | [Home Depot](https://www.homedepot.com/s/appliance%20power%20cord) or [Amazon](https://www.amazon.com/s?k=14+awg+power+cord+3+prong) |
+
+**Alternative: All-in-One Kits**
+
+Instead of buying parts separately, search for:
+- **"Handy box with outlet"** - Pre-assembled metal box with outlet (~$8-12)
+- **"Metal outlet box kit"** on Amazon - Often includes box + outlet + cover
+
+**What the outlet box looks like:**
+
+```
+    ┌───────────────┐
+    │  ┌─────────┐  │
+    │  │  ═══    │  │   ← Standard 3-prong duplex outlet
+    │  │  ● ●    │  │     Your pump's plug goes here
+    │  │  ═══    │  │
+    │  │         │  │
+    │  │  ═══    │  │   ← Second outlet (optional, can leave unwired)
+    │  │  ● ●    │  │
+    │  │  ═══    │  │
+    │  └─────────┘  │
+    │   Metal Box   │   ← Wires enter through knockouts on back/sides
+    └───────────────┘
+```
 
 ### Optional but Recommended
 
