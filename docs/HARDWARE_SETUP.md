@@ -12,7 +12,7 @@ Complete guide to assembling and testing SmartPlug before connecting to your pum
 | 2x DS18B20 Temperature Sensors | $10 | Amazon, AliExpress | Get waterproof or surface-mount versions |
 | Hall-effect Flow Meter (3/4" NPT) | $12-15 | Amazon ("YF-S201" or similar) | Brass/stainless, NOT plastic |
 | 5V Relay Module (10A) | $3-6 | [Amazon](https://www.amazon.com/s?k=5v+relay+module+1+channel+10a) | See relay details below |
-| 32GB microSD Card | $8 | Amazon | Class 10 or better |
+| 32GB microSD Card (blank) | $8 | [Amazon](https://www.amazon.com/s?k=sandisk+32gb+micro+sd+class+10) | See microSD note below - do NOT get pre-loaded |
 | 5V/2.5A USB Power Supply | $8 | Amazon | Quality supply recommended |
 | 4.7kΩ Resistor | $0.10 | Any electronics store | 1/4W through-hole |
 | Jumper Wires | $3 | Amazon | Female-to-female and male-to-female |
@@ -45,6 +45,33 @@ Without Header:              With Header (you want this):
 | Pi Zero 2 W (no header) | ~$15 | Must solder 40 pins yourself |
 
 **Search:** "Raspberry Pi Zero 2 W with Pre-soldered Header"
+
+### MicroSD Card Note
+
+**Buy a blank microSD card** - do NOT get the pre-loaded "Official Raspberry Pi OS" card.
+
+| Pre-loaded Card ❌ | Blank Card + Flash Yourself ✅ |
+|-------------------|-------------------------------|
+| 32-bit OS | 64-bit OS (better for SmartPlug) |
+| Full Desktop (bloated) | Lite version (no desktop, faster) |
+| No WiFi configured | Your WiFi pre-configured |
+| No SSH enabled | SSH enabled for headless setup |
+
+**What to buy:**
+- Any 32GB Class 10 microSD card (~$8)
+- [SanDisk 32GB](https://www.amazon.com/s?k=sandisk+32gb+micro+sd+class+10) or [Samsung EVO](https://www.amazon.com/s?k=samsung+evo+32gb+micro+sd) work great
+
+**How to flash (5 minutes):**
+1. Download [Raspberry Pi Imager](https://www.raspberrypi.com/software/) (free)
+2. Insert microSD card into your computer
+3. Open Imager → Choose OS → **Raspberry Pi OS Lite (64-bit)**
+4. Click gear icon ⚙️ and configure:
+   - ✅ Set hostname: `smartplug`
+   - ✅ Enable SSH (use password authentication)
+   - ✅ Set username/password
+   - ✅ Configure wireless LAN (your WiFi name + password)
+5. Choose your SD card → Write
+6. Done! Insert card into Pi and power on.
 
 ### Relay Module Details
 
