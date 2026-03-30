@@ -73,7 +73,7 @@ NC  = Normally Closed (not used)
 | Outlet cover plate | Leviton 88003 | ~$0.50 | [Home Depot](https://www.homedepot.com/s/duplex%20outlet%20cover) |
 | 14 AWG electrical wire (3 ft) | THHN or Romex scrap | ~$3 | [Home Depot](https://www.homedepot.com/s/14%20awg%20wire) |
 | Wire nuts (assorted) | Ideal 30-072 | ~$2-5 | [Home Depot](https://www.homedepot.com/s/wire%20nuts) |
-| Power cord with plug (14 AWG, 3-prong) | 6ft appliance cord | ~$8-12 | [Home Depot](https://www.homedepot.com/s/appliance%20power%20cord) or [Amazon](https://www.amazon.com/s?k=14+awg+power+cord+3+prong) |
+| Power cord with plug (14 AWG, 3-prong) | Husky 9ft 14/3 Tool Cord | ~$15 | [Home Depot](https://www.homedepot.com/p/303679849) |
 
 **Alternative: All-in-One Kits**
 
@@ -121,6 +121,51 @@ Instead of buying parts separately, search for:
 
 **When the relay is OFF:** No power reaches the controlled outlet → Pump is off
 **When the relay is ON:** Power flows to the controlled outlet → Pump runs
+
+### Wire Color Standards (US Household 120V AC)
+
+| Wire Color | Function | Connects To |
+|------------|----------|-------------|
+| **BLACK** | HOT (live, dangerous!) | Relay NO → COM → Outlet brass screw |
+| **WHITE** | NEUTRAL (return path) | Outlet silver screw (bypasses relay) |
+| **GREEN** | GROUND (safety) | Outlet ground screw + metal box (bypasses relay) |
+
+**Why not red for hot?** Red = hot in DC circuits (cars, batteries) and in 240V AC (second hot leg). For standard US 120V household wiring, **black = hot**.
+
+### Complete Wiring Flow Diagram
+
+This numbered diagram shows exactly how power flows from the wall to your pump:
+
+```
+     WALL        POWER CORD        RELAY           OUTLET          PUMP
+     OUTLET      (male plug)                       (female)        (male plug)
+       ║
+ 1     ║            ┌─────┐        ┌─────┐         ┌─────┐         ┌─────┐
+ 2     ╠══ HOT ════►│BLACK│═══════►│ NO  │         │     │         │     │
+ 3     ║            │wire │        │     │         │ HOT │◄════════│     │
+ 4     ║            └─────┘        │ COM │════════►│brass│         │     │
+ 5     ║                           └─────┘         │     │         │     │
+ 6     ║            ┌─────┐                        │     │         │     │
+ 7     ╠══NEUTRAL══►│WHITE│═══════════════════════►│ NEU │◄════════│     │
+ 8     ║            │wire │  (bypasses relay)      │silvr│         │     │
+ 9     ║            └─────┘                        │     │         │     │
+10     ║            ┌─────┐                        │     │         │     │
+11     ╚══GROUND═══►│GREEN│═══════════════════════►│ GND │◄════════│     │
+12                  │wire │  (bypasses relay)      │green│         └─────┘
+13                  └─────┘                        └─────┘
+```
+
+**Line-by-line explanation:**
+
+| Lines | Description |
+|-------|-------------|
+| 2 | HOT from wall enters the black wire of your power cord |
+| 2-4 | Black wire connects to relay **NO** terminal, relay **COM** connects to outlet brass (hot) screw |
+| 3 | When relay closes, power flows from NO→COM to the outlet, then to pump |
+| 7-8 | NEUTRAL (white) goes directly to outlet silver screw - does NOT go through relay |
+| 11-12 | GROUND (green) goes directly to outlet ground screw - does NOT go through relay |
+
+**Key insight:** The relay only switches the HOT wire. It's like a light switch - you don't switch neutral or ground, just the hot.
 
 This is safer than cutting the pump's cord because:
 - Your pump stays completely stock (warranty intact)
