@@ -134,36 +134,56 @@ Instead of buying parts separately, search for:
 
 ### Complete Wiring Flow Diagram
 
-This numbered diagram shows exactly how power flows from the wall to your pump:
+This numbered diagram shows exactly how power flows from the wall to your pump.
+
+**You need 4 wire connections:**
+1. Black wire from power cord → Relay NO
+2. **Short jumper wire (14 AWG, ~4")** → Relay COM to Outlet brass
+3. White wire from power cord → Outlet silver (direct)
+4. Green wire from power cord → Outlet ground (direct)
 
 ```
-     WALL        POWER CORD        RELAY           OUTLET          PUMP
-     OUTLET      (male plug)                       (female)        (male plug)
+     WALL        POWER CORD        RELAY            JUMPER         OUTLET         PUMP
+     OUTLET      (male plug)                        WIRE           (female)       (plug)
        ║
- 1     ║            ┌─────┐        ┌─────┐         ┌─────┐         ┌─────┐
- 2     ╠══ HOT ════►│BLACK│═══════►│ NO  │         │     │         │     │
- 3     ║            │wire │        │     │         │ HOT │◄════════│     │
- 4     ║            └─────┘        │ COM │════════►│brass│         │     │
- 5     ║                           └─────┘         │     │         │     │
- 6     ║            ┌─────┐                        │     │         │     │
- 7     ╠══NEUTRAL══►│WHITE│═══════════════════════►│ NEU │◄════════│     │
- 8     ║            │wire │  (bypasses relay)      │silvr│         │     │
- 9     ║            └─────┘                        │     │         │     │
-10     ║            ┌─────┐                        │     │         │     │
-11     ╚══GROUND═══►│GREEN│═══════════════════════►│ GND │◄════════│     │
-12                  │wire │  (bypasses relay)      │green│         └─────┘
-13                  └─────┘                        └─────┘
+       ║            ┌───────┐      ┌───────┐       ┌──────┐       ┌───────┐      ┌─────┐
+ 1     ║            │ BLACK │      │       │       │14 AWG│       │       │      │     │
+ 2     ╠══ HOT ════►│ wire  │═════►│  NO   │       │black │       │       │      │     │
+ 3     ║            │       │      │       │       │ wire │       │  HOT  │◄═════│     │
+ 4     ║            └───────┘      │  COM  │══════►│ (~4")│══════►│ brass │      │     │
+ 5     ║                           │       │       └──────┘       │       │      │     │
+ 6     ║                           │  NC   │ (unused)             │       │      │     │
+ 7     ║                           └───────┘                      │       │      │     │
+ 8     ║                                                          │       │      │     │
+ 9     ║            ┌───────┐                                     │       │      │     │
+10     ╠══NEUTRAL══►│ WHITE │════════════════════════════════════►│  NEU  │◄═════│     │
+11     ║            │ wire  │         (bypasses relay)            │silver │      │     │
+12     ║            └───────┘                                     │       │      │     │
+13     ║                                                          │       │      │     │
+14     ║            ┌───────┐                                     │       │      │     │
+15     ╚══GROUND═══►│ GREEN │════════════════════════════════════►│  GND  │◄═════│     │
+16                  │ wire  │         (bypasses relay)            │ green │      └─────┘
+17                  └───────┘                                     └───────┘
 ```
 
 **Line-by-line explanation:**
 
-| Lines | Description |
-|-------|-------------|
-| 2 | HOT from wall enters the black wire of your power cord |
-| 2-4 | Black wire connects to relay **NO** terminal, relay **COM** connects to outlet brass (hot) screw |
-| 3 | When relay closes, power flows from NO→COM to the outlet, then to pump |
-| 7-8 | NEUTRAL (white) goes directly to outlet silver screw - does NOT go through relay |
-| 11-12 | GROUND (green) goes directly to outlet ground screw - does NOT go through relay |
+| Lines | What to do |
+|-------|------------|
+| 2 | Strip black wire from power cord, insert into relay **NO** screw terminal |
+| 4 | Cut a ~4" piece of 14 AWG black wire (the "jumper"), connect relay **COM** to outlet **brass** screw |
+| 6 | Relay **NC** terminal - leave empty, not used |
+| 10-11 | White wire from power cord goes directly to outlet **silver** screw |
+| 15-16 | Green wire from power cord goes directly to outlet **ground** screw |
+
+**Shopping list for wires:**
+
+| Wire | Length | Purpose |
+|------|--------|---------|
+| Black (from Husky cord) | comes with cord | Power cord → Relay NO |
+| **14 AWG black (buy separately)** | ~4 inches | Relay COM → Outlet brass |
+| White (from Husky cord) | comes with cord | Power cord → Outlet silver |
+| Green (from Husky cord) | comes with cord | Power cord → Outlet ground |
 
 **Key insight:** The relay only switches the HOT wire. It's like a light switch - you don't switch neutral or ground, just the hot.
 
