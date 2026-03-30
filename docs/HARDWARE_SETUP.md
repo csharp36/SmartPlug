@@ -11,7 +11,7 @@ Complete guide to assembling and testing SmartPlug before connecting to your pum
 | Raspberry Pi Zero 2 W | $15 | [RPi Foundation](https://www.raspberrypi.com/products/raspberry-pi-zero-2-w/), Adafruit, Amazon | Must be Zero 2 W (not original Zero) for performance |
 | 2x DS18B20 Temperature Sensors | $10 | Amazon, AliExpress | Get waterproof or surface-mount versions |
 | Hall-effect Flow Meter (3/4" NPT) | $12-15 | Amazon ("YF-S201" or similar) | Brass/stainless, NOT plastic |
-| 5V Relay Module (10A) | $3-5 | Amazon, AliExpress | Must be opto-isolated, 10A minimum |
+| 5V Relay Module (10A) | $3-6 | [Amazon](https://www.amazon.com/s?k=5v+relay+module+1+channel+10a) | See relay details below |
 | 32GB microSD Card | $8 | Amazon | Class 10 or better |
 | 5V/2.5A USB Power Supply | $8 | Amazon | Quality supply recommended |
 | 4.7kΩ Resistor | $0.10 | Any electronics store | 1/4W through-hole |
@@ -20,6 +20,49 @@ Complete guide to assembling and testing SmartPlug before connecting to your pum
 | Electrical Tape | $2 | Hardware store | For insulating sensors |
 
 **Total: ~$66-73**
+
+### Relay Module Details
+
+The relay module switches 120V AC power to the outlet where your pump plugs in.
+
+**Requirements:**
+- **5V control voltage** (matches Pi's GPIO output)
+- **10A rating minimum** (Taco pump draws ~1A, but want headroom)
+- **1 channel** (only controlling one outlet)
+
+**Recommended products:**
+
+| Product | Price | Link |
+|---------|-------|------|
+| AJSWISH SRD-05VDC-SL-C | ~$6 | [Amazon](https://www.amazon.com/dp/B0D6KCJ4ZN) |
+| HiLetgo 5V 1-Channel Relay | ~$5 | [Amazon](https://www.amazon.com/s?k=hiletgo+5v+relay+module+1+channel) |
+| SunFounder 5V Relay Module | ~$6 | [Amazon](https://www.amazon.com/s?k=sunfounder+5v+relay+module) |
+
+**Search terms:** `5V 1 channel relay module 10A` or `SRD-05VDC-SL-C relay module`
+
+**What it looks like:**
+
+```
+┌─────────────────────────────────────┐
+│     [====]  ← Blue relay cube      │
+│                                     │
+│  ┌─────┬─────┬─────┐               │
+│  │ NO  │ COM │ NC  │  ← Screw terminals (high-voltage side)
+│  └─────┴─────┴─────┘               │
+│                                     │
+│     VCC   GND   IN   ← Pin header (low-voltage side, to Pi)
+│      ●     ●     ●                 │
+└─────────────────────────────────────┘
+
+NO  = Normally Open (hot wire from power cord goes here)
+COM = Common (hot wire to outlet goes here)
+NC  = Normally Closed (not used)
+```
+
+**Avoid:**
+- 3.3V relays (may not trigger reliably from Pi GPIO)
+- Solid-state relays rated under 5A
+- Modules without screw terminals for the high-voltage side
 
 ### For Relay-Controlled Outlet (Recommended)
 
