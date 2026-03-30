@@ -61,6 +61,28 @@ Without Header:              With Header (you want this):
 - Any 32GB Class 10 microSD card (~$8)
 - [SanDisk 32GB](https://www.amazon.com/s?k=sandisk+32gb+micro+sd+class+10) or [Samsung EVO](https://www.amazon.com/s?k=samsung+evo+32gb+micro+sd) work great
 
+**Connecting microSD to your Mac:**
+
+Most Macs don't have a microSD slot. Options:
+
+| Option | Price | Notes |
+|--------|-------|-------|
+| USB microSD card reader | ~$8 | [Anker USB-C](https://www.amazon.com/s?k=anker+usb+c+sd+card+reader) or [SanDisk MobileMate](https://www.amazon.com/s?k=sandisk+mobilemate+usb+microsd+reader) |
+| MicroSD-to-SD adapter | Free | Often included with microSD card, use Mac's SD slot |
+| USB-C hub with SD slot | ~$30+ | If you already have one |
+
+**Does your Mac have an SD slot?**
+
+| Mac | SD Slot? |
+|-----|----------|
+| MacBook Pro 14"/16" (2021+) | ✅ Yes |
+| MacBook Pro 13" | ❌ No |
+| MacBook Air M1/M2/M3 | ❌ No |
+| MacBook Air (pre-2018) | ✅ Yes |
+| iMac (most models) | ❌ No |
+
+If your Mac has no SD slot → buy the USB card reader (~$8).
+
 **How to flash (5 minutes):**
 1. Download [Raspberry Pi Imager](https://www.raspberrypi.com/software/) (free)
 2. Insert microSD card into your computer
