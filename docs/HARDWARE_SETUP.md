@@ -8,7 +8,7 @@ Complete guide to assembling and testing SmartPlug before connecting to your pum
 
 | Component | Approx Price | Where to Buy | Notes |
 |-----------|--------------|--------------|-------|
-| Raspberry Pi Zero 2 W | $15 | [RPi Foundation](https://www.raspberrypi.com/products/raspberry-pi-zero-2-w/), Adafruit, Amazon | Must be Zero 2 W (not original Zero) for performance |
+| Raspberry Pi Zero 2 W **with Header** | ~$20 | [Adafruit](https://www.adafruit.com/product/5291), [Amazon](https://www.amazon.com/s?k=raspberry+pi+zero+2+w+with+header) | See note about headers below |
 | 2x DS18B20 Temperature Sensors | $10 | Amazon, AliExpress | Get waterproof or surface-mount versions |
 | Hall-effect Flow Meter (3/4" NPT) | $12-15 | Amazon ("YF-S201" or similar) | Brass/stainless, NOT plastic |
 | 5V Relay Module (10A) | $3-6 | [Amazon](https://www.amazon.com/s?k=5v+relay+module+1+channel+10a) | See relay details below |
@@ -19,7 +19,32 @@ Complete guide to assembling and testing SmartPlug before connecting to your pum
 | Thermal Paste | $5 | Amazon | For sensor contact |
 | Electrical Tape | $2 | Hardware store | For insulating sensors |
 
-**Total: ~$66-73**
+**Total: ~$70-80**
+
+### Raspberry Pi Header Note
+
+**Get the "with Header" version** - this means the 40-pin GPIO connector is pre-soldered.
+
+```
+Without Header:              With Header (you want this):
+┌──────────────────┐        ┌──────────────────┐
+│ ○ ○ ○ ○ ○ ○ ○ ○  │        │ ▪ ▪ ▪ ▪ ▪ ▪ ▪ ▪  │ ← Pins you plug
+│ ○ ○ ○ ○ ○ ○ ○ ○  │        │ ▪ ▪ ▪ ▪ ▪ ▪ ▪ ▪  │   jumper wires into
+│                  │        │                  │
+│   Pi Zero 2 W    │        │   Pi Zero 2 W    │
+└──────────────────┘        └──────────────────┘
+(holes only - need          (ready to use!)
+ to solder pins)
+```
+
+**Why you need headers:** Jumper wires plug into these pins to connect the sensors, relay, and flow meter.
+
+| Option | Price | Effort |
+|--------|-------|--------|
+| **Pi Zero 2 W with Header** | ~$20 | None - plug and play ✅ |
+| Pi Zero 2 W (no header) | ~$15 | Must solder 40 pins yourself |
+
+**Search:** "Raspberry Pi Zero 2 W with Pre-soldered Header"
 
 ### Relay Module Details
 
