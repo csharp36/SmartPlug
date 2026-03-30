@@ -136,7 +136,7 @@ Instead of buying parts separately, search for:
 
 This numbered diagram shows exactly how power flows from the wall to your pump.
 
-**You need 4 wire connections:**
+**You need 4 physical wire connections:**
 1. Black wire from power cord → Relay NO
 2. **Short jumper wire (14 AWG, ~4")** → Relay COM to Outlet brass
 3. White wire from power cord → Outlet silver (direct)
@@ -148,9 +148,9 @@ This numbered diagram shows exactly how power flows from the wall to your pump.
        ║
        ║            ┌───────┐      ┌───────┐       ┌──────┐       ┌───────┐      ┌─────┐
  1     ║            │ BLACK │      │       │       │14 AWG│       │       │      │     │
- 2     ╠══ HOT ════►│ wire  │═════►│  NO   │       │black │       │       │      │     │
- 3     ║            │       │      │       │       │ wire │       │  HOT  │◄═════│     │
- 4     ║            └───────┘      │  COM  │══════►│ (~4")│══════►│ brass │      │     │
+ 2     ╠══ HOT ════►│ wire  │═════►│► NO   │       │black │       │       │      │     │
+ 3     ║            │       │      │   ↕   │internal      │       │  HOT  │◄═════│     │
+ 4     ║            └───────┘      │► COM  │══════►│ (~4")│══════►│ brass │      │     │
  5     ║                           │       │       └──────┘       │       │      │     │
  6     ║                           │  NC   │ (unused)             │       │      │     │
  7     ║                           └───────┘                      │       │      │     │
@@ -166,24 +166,44 @@ This numbered diagram shows exactly how power flows from the wall to your pump.
 17                  └───────┘                                     └───────┘
 ```
 
-**Line-by-line explanation:**
+### How the Relay Works (NO to COM is Internal)
+
+**Important:** You do NOT run a wire from NO to COM. The relay connects them *internally* when triggered.
+
+```
+Relay OFF (Pi GPIO17 = LOW):        Relay ON (Pi GPIO17 = HIGH):
+
+  Power in ───►│ NO ●                 Power in ───►│ NO ●━━━┓
+               │        (open)                     │        ┃ (closed!)
+  To outlet ◄──│ COM ●                To outlet ◄──│ COM ●━━┛
+               │                                   │
+       (unused)│ NC ●                      (unused)│ NC ●
+
+  Result: No power to outlet          Result: Power flows to outlet
+          Pump is OFF                          Pump runs!
+```
+
+The relay is just an electrically-controlled switch. When the Pi sends a signal, an electromagnet inside the relay physically moves a metal contact to connect NO and COM.
+
+### Line-by-line Wiring Instructions
 
 | Lines | What to do |
 |-------|------------|
-| 2 | Strip black wire from power cord, insert into relay **NO** screw terminal |
+| 2 | Strip black wire from power cord, insert into relay **NO** screw terminal, tighten |
 | 4 | Cut a ~4" piece of 14 AWG black wire (the "jumper"), connect relay **COM** to outlet **brass** screw |
+| 3 | NO↔COM connection happens *inside* the relay - no wire needed here |
 | 6 | Relay **NC** terminal - leave empty, not used |
 | 10-11 | White wire from power cord goes directly to outlet **silver** screw |
 | 15-16 | Green wire from power cord goes directly to outlet **ground** screw |
 
-**Shopping list for wires:**
+### Shopping List for Wires
 
-| Wire | Length | Purpose |
-|------|--------|---------|
-| Black (from Husky cord) | comes with cord | Power cord → Relay NO |
-| **14 AWG black (buy separately)** | ~4 inches | Relay COM → Outlet brass |
-| White (from Husky cord) | comes with cord | Power cord → Outlet silver |
-| Green (from Husky cord) | comes with cord | Power cord → Outlet ground |
+| Wire | Length | Purpose | Source |
+|------|--------|---------|--------|
+| Black | ~3 ft | Power cord → Relay NO | Comes with Husky cord |
+| **Black jumper** | **~4 inches** | **Relay COM → Outlet brass** | **Buy 14 AWG THHN** |
+| White | ~3 ft | Power cord → Outlet silver | Comes with Husky cord |
+| Green | ~3 ft | Power cord → Outlet ground | Comes with Husky cord |
 
 **Key insight:** The relay only switches the HOT wire. It's like a light switch - you don't switch neutral or ground, just the hot.
 
