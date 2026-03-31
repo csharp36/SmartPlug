@@ -364,16 +364,22 @@ The [Home Assistant Green](https://ameridroid.com/products/home-assistant-green)
    - Install "Mosquitto broker"
    - Configure a username/password
 
-2. **Run SmartPlug controller** as a container or standalone binary:
+2. **Install SmartPlug Controller add-on**:
 
+   **Option A: From Repository (Recommended)**
+   - Go to Settings → Add-ons → Add-on Store
+   - Click ⋮ → Repositories
+   - Add: `https://github.com/smartplug/smartplug`
+   - Install "SmartPlug Controller"
+
+   **Option B: Manual Binary**
    ```bash
    # SSH into Home Assistant
-   # Download the controller binary
    curl -LO https://github.com/smartplug/smartplug/releases/latest/download/smartplug-linux-arm64.tar.gz
    tar xzf smartplug-linux-arm64.tar.gz
    ```
 
-3. **Configure for HA Green**:
+3. **Configure the add-on** (or create config file for manual install):
 
    ```yaml
    # /config/smartplug/smartplug.yaml
