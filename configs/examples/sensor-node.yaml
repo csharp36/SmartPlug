@@ -1,0 +1,36 @@
+# SmartPlug Configuration - Sensor Node Mode
+# This configuration is for a Raspberry Pi that only reads sensors
+# and publishes data to MQTT. No pump control, no web UI.
+#
+# Use with: smartplug-sensor or smartplug --config sensor-node.yaml
+
+deployment:
+  mode: sensor
+  node_id: "sensor-kitchen"    # Unique identifier for this sensor node
+
+hardware:
+  onewire_gpio: 4              # GPIO pin for 1-Wire bus
+  flowmeter_gpio: 27           # GPIO pin for flow meter (if connected)
+
+sensors:
+  # Sensor IDs are auto-discovered if not specified
+  # hot_outlet_id: "28-xxxxxxxxxxxx"
+  # return_line_id: "28-yyyyyyyyyyyy"
+  poll_interval: 2
+
+flowmeter:
+  enabled: true                # Set to false if no flow meter connected
+  pulses_per_liter: 450
+  trigger_threshold: 3
+  debounce_ms: 50
+  demand_timeout: 30
+
+mqtt:
+  enabled: true
+  broker: "tcp://192.168.1.100:1883"   # MQTT broker address
+  username: ""                          # Optional authentication
+  password: ""
+  topic_prefix: "smartplug"
+
+logging:
+  level: "info"

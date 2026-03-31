@@ -1,0 +1,65 @@
+# SmartPlug Configuration - All-in-One Mode (Default)
+# This is the original deployment mode where sensors, flow meter, and relay
+# are all connected to the same Raspberry Pi.
+
+deployment:
+  mode: all-in-one
+  # No other deployment settings needed - uses GPIO directly
+
+hardware:
+  onewire_gpio: 4      # GPIO pin for 1-Wire bus (DS18B20 sensors)
+  relay_gpio: 17       # GPIO pin for pump relay
+  flowmeter_gpio: 27   # GPIO pin for flow meter
+
+sensors:
+  # Sensor IDs are auto-discovered if not specified
+  # hot_outlet_id: "28-xxxxxxxxxxxx"
+  # return_line_id: "28-yyyyyyyyyyyy"
+  poll_interval: 2     # Seconds between sensor readings
+
+pump:
+  start_threshold: 12.0     # Start pump when differential >= 12°F
+  stop_threshold: 8.0       # Stop pump when differential <= 8°F
+  max_runtime_minutes: 15   # Maximum pump runtime per cycle
+  cooldown_minutes: 5       # Cooldown period between cycles
+  min_temperature: 40.0     # Safety: don't run if temp below this
+
+flowmeter:
+  enabled: true
+  pulses_per_liter: 450     # Calibration for your flow meter
+  trigger_threshold: 3      # Pulses to trigger demand detection
+  debounce_ms: 50
+  demand_timeout: 30        # Seconds of no pulses to end demand
+
+schedule:
+  enabled: true
+  slots:
+    - start: "06:00"
+      end: "09:00"
+      days: [0, 1, 2, 3, 4, 5, 6]  # All days
+      enabled: true
+    - start: "17:00"
+      end: "21:00"
+      days: [0, 1, 2, 3, 4, 5, 6]
+      enabled: true
+  learning:
+    enabled: true
+    min_days: 7
+    vacation_timeout_hours: 24
+
+web:
+  address: ":8080"
+  https_enabled: false
+
+mqtt:
+  enabled: true
+  broker: "tcp://localhost:1883"
+  topic_prefix: "smartplug"
+  ha_discovery: true
+  ha_discovery_prefix: "homeassistant"
+
+logging:
+  level: "info"
+
+system:
+  data_dir: "/var/lib/smartplug"

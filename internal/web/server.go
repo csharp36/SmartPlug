@@ -12,7 +12,7 @@ import (
 	"github.com/smartplug/smartplug/internal/api"
 	"github.com/smartplug/smartplug/internal/config"
 	"github.com/smartplug/smartplug/internal/controller"
-	"github.com/smartplug/smartplug/internal/hardware"
+	"github.com/smartplug/smartplug/internal/core"
 	"github.com/smartplug/smartplug/internal/scheduler"
 )
 
@@ -27,8 +27,8 @@ type Server struct {
 	cfg       *config.WebConfig
 	api       *api.API
 	pump      *controller.PumpController
-	sensors   *hardware.SensorManager
-	flowMeter *hardware.FlowMeter
+	temps     core.TemperatureProvider
+	demand    core.DemandDetector
 	scheduler *scheduler.Scheduler
 	learner   *scheduler.Learner
 	templates *template.Template
@@ -46,13 +46,13 @@ var templateFuncs = template.FuncMap{
 	},
 }
 
-// NewServer creates a new web server
+// NewServer creates a new web server using interface-based dependencies.
 func NewServer(
 	cfg *config.WebConfig,
 	apiHandler *api.API,
 	pump *controller.PumpController,
-	sensors *hardware.SensorManager,
-	flowMeter *hardware.FlowMeter,
+	temps core.TemperatureProvider,
+	demand core.DemandDetector,
 	sched *scheduler.Scheduler,
 	learner *scheduler.Learner,
 ) (*Server, error) {
@@ -66,8 +66,8 @@ func NewServer(
 		cfg:       cfg,
 		api:       apiHandler,
 		pump:      pump,
-		sensors:   sensors,
-		flowMeter: flowMeter,
+		temps:     temps,
+		demand:    demand,
 		scheduler: sched,
 		learner:   learner,
 		templates: tmpl,
@@ -149,7 +149,7 @@ func (s *Server) handleDashboard(w http.ResponseWriter, r *http.Request) {
 	}
 
 	pumpStatus := s.pump.GetStatus()
-	hot, ret := s.sensors.GetCurrentReadings()
+	hot, ret := s.temps.GetCurrentReadings()
 
 	data := DashboardData{
 		PumpState:         pumpStatus.State.String(),
@@ -166,9 +166,9 @@ func (s *Server) handleDashboard(w http.ResponseWriter, r *http.Request) {
 		RuntimeSeconds:    pumpStatus.Runtime.Seconds(),
 	}
 
-	if s.flowMeter != nil {
+	if s.demand != nil {
 		data.FlowEnabled = true
-		data.FlowActive = s.flowMeter.IsFlowActive()
+		data.FlowActive = s.demand.IsFlowActive()
 	}
 
 	if err := s.templates.ExecuteTemplate(w, "dashboard.html", data); err != nil {
@@ -207,12 +207,17 @@ func (s *Server) handleSchedulePage(w http.ResponseWriter, r *http.Request) {
 
 // SettingsData contains data for the settings template
 type SettingsData struct {
-	Config          config.Config
+	Config            config.Config
 	DiscoveredSensors []string
 }
 
 func (s *Server) handleSettingsPage(w http.ResponseWriter, r *http.Request) {
-	sensors, _ := s.sensors.DiscoverSensors()
+	var sensors []string
+
+	// Try to discover sensors if the temperature provider supports it
+	if discoverer, ok := s.temps.(core.SensorDiscoverer); ok {
+		sensors, _ = discoverer.DiscoverSensors()
+	}
 
 	data := SettingsData{
 		// Config will be loaded from manager

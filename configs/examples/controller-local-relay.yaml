@@ -1,0 +1,51 @@
+# SmartPlug Configuration - Controller with Local Relay
+# This configuration is for running the controller on a device that has
+# both MQTT access to remote sensors AND a local GPIO relay.
+# Use this when sensors are remote but the pump relay is directly connected.
+#
+# Use with: smartplug-controller or smartplug --config controller-local-relay.yaml
+
+deployment:
+  mode: controller
+  sensor_node_ids:
+    - "sensor-kitchen"
+  actuator_type: local         # Use local GPIO relay instead of MQTT
+  data_timeout: 30
+
+hardware:
+  relay_gpio: 17               # GPIO pin for local pump relay
+
+pump:
+  start_threshold: 12.0
+  stop_threshold: 8.0
+  max_runtime_minutes: 15
+  cooldown_minutes: 5
+  min_temperature: 40.0
+
+schedule:
+  enabled: true
+  slots:
+    - start: "06:00"
+      end: "09:00"
+      days: [0, 1, 2, 3, 4, 5, 6]
+      enabled: true
+  learning:
+    enabled: true
+    min_days: 7
+    vacation_timeout_hours: 24
+
+web:
+  address: ":8080"
+
+mqtt:
+  enabled: true
+  broker: "tcp://192.168.1.100:1883"
+  topic_prefix: "smartplug"
+  ha_discovery: true
+  ha_discovery_prefix: "homeassistant"
+
+logging:
+  level: "info"
+
+system:
+  data_dir: "/var/lib/smartplug"

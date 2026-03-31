@@ -1,0 +1,49 @@
+# SmartPlug Configuration - Controller Mode
+# This configuration is for running the controller on a separate device
+# (e.g., Home Assistant add-on, separate Pi, or any Linux machine).
+# It receives sensor data via MQTT and controls a smart plug via MQTT.
+#
+# Use with: smartplug-controller or smartplug --config controller.yaml
+
+deployment:
+  mode: controller
+  sensor_node_ids:             # List of sensor nodes to subscribe to
+    - "sensor-kitchen"
+  actuator_type: mqtt          # "mqtt" for smart plug, "local" for GPIO relay
+  data_timeout: 30             # Seconds before sensor data is considered stale
+
+pump:
+  start_threshold: 12.0
+  stop_threshold: 8.0
+  max_runtime_minutes: 15
+  cooldown_minutes: 5
+  min_temperature: 40.0
+
+schedule:
+  enabled: true
+  slots:
+    - start: "06:00"
+      end: "09:00"
+      days: [0, 1, 2, 3, 4, 5, 6]
+      enabled: true
+  learning:
+    enabled: true
+    min_days: 7
+    vacation_timeout_hours: 24
+
+web:
+  address: ":8080"
+  https_enabled: false
+
+mqtt:
+  enabled: true
+  broker: "tcp://localhost:1883"    # Usually localhost for HA add-on
+  topic_prefix: "smartplug"
+  ha_discovery: true
+  ha_discovery_prefix: "homeassistant"
+
+logging:
+  level: "info"
+
+system:
+  data_dir: "/var/lib/smartplug"

@@ -9,6 +9,7 @@ import (
 
 	"github.com/smartplug/smartplug/internal/config"
 	"github.com/smartplug/smartplug/internal/controller"
+	"github.com/smartplug/smartplug/internal/core"
 	"github.com/smartplug/smartplug/internal/hardware"
 	"github.com/smartplug/smartplug/internal/scheduler"
 )
@@ -16,26 +17,26 @@ import (
 // API handles REST API requests
 type API struct {
 	pump      *controller.PumpController
-	sensors   *hardware.SensorManager
-	flowMeter *hardware.FlowMeter
+	temps     core.TemperatureProvider
+	demand    core.DemandDetector
 	scheduler *scheduler.Scheduler
 	learner   *scheduler.Learner
 	config    *config.Manager
 }
 
-// NewAPI creates a new API handler
+// NewAPI creates a new API handler using interface-based dependencies.
 func NewAPI(
 	pump *controller.PumpController,
-	sensors *hardware.SensorManager,
-	flowMeter *hardware.FlowMeter,
+	temps core.TemperatureProvider,
+	demand core.DemandDetector,
 	sched *scheduler.Scheduler,
 	learner *scheduler.Learner,
 	cfg *config.Manager,
 ) *API {
 	return &API{
 		pump:      pump,
-		sensors:   sensors,
-		flowMeter: flowMeter,
+		temps:     temps,
+		demand:    demand,
 		scheduler: sched,
 		learner:   learner,
 		config:    cfg,
@@ -71,11 +72,11 @@ func (a *API) RegisterRoutes(mux *http.ServeMux) {
 
 // StatusResponse contains full system status
 type StatusResponse struct {
-	Pump        PumpStatus        `json:"pump"`
+	Pump         PumpStatus        `json:"pump"`
 	Temperatures TemperatureStatus `json:"temperatures"`
-	Flow        FlowStatus        `json:"flow"`
-	Schedule    ScheduleStatus    `json:"schedule"`
-	Timestamp   time.Time         `json:"timestamp"`
+	Flow         FlowStatus        `json:"flow"`
+	Schedule     ScheduleStatus    `json:"schedule"`
+	Timestamp    time.Time         `json:"timestamp"`
 }
 
 type PumpStatus struct {
@@ -96,9 +97,9 @@ type TemperatureStatus struct {
 }
 
 type FlowStatus struct {
-	Active      bool  `json:"active"`
-	PulseCount  int64 `json:"pulse_count"`
-	Enabled     bool  `json:"enabled"`
+	Active     bool  `json:"active"`
+	PulseCount int64 `json:"pulse_count"`
+	Enabled    bool  `json:"enabled"`
 }
 
 type ScheduleStatus struct {
@@ -115,7 +116,7 @@ func (a *API) handleStatus(w http.ResponseWriter, r *http.Request) {
 	}
 
 	pumpStatus := a.pump.GetStatus()
-	hot, ret := a.sensors.GetCurrentReadings()
+	hot, ret := a.temps.GetCurrentReadings()
 
 	response := StatusResponse{
 		Pump: PumpStatus{
@@ -150,12 +151,16 @@ func (a *API) handleStatus(w http.ResponseWriter, r *http.Request) {
 		response.Schedule.ActiveSlot = activeSlot.ID
 	}
 
-	if a.flowMeter != nil {
-		stats := a.flowMeter.GetStats()
+	if a.demand != nil {
 		response.Flow = FlowStatus{
-			Active:     stats.IsFlowActive,
-			PulseCount: stats.PulseCount,
-			Enabled:    true,
+			Active:  a.demand.IsFlowActive(),
+			Enabled: true,
+		}
+
+		// Try to get pulse count if the demand detector supports it
+		if statsProvider, ok := a.demand.(core.FlowStatsProvider); ok {
+			stats := statsProvider.GetStats()
+			response.Flow.PulseCount = stats.PulseCount
 		}
 	}
 
@@ -168,7 +173,7 @@ func (a *API) handleTemperatures(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	hot, ret := a.sensors.GetCurrentReadings()
+	hot, ret := a.temps.GetCurrentReadings()
 
 	response := TemperatureStatus{
 		HotOutlet:    hot.Temperature,
@@ -260,9 +265,9 @@ func (a *API) handleSchedule(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
 		response := struct {
-			Enabled  bool                  `json:"enabled"`
-			InWindow bool                  `json:"in_window"`
-			Slots    []scheduler.TimeSlot  `json:"slots"`
+			Enabled  bool                 `json:"enabled"`
+			InWindow bool                 `json:"in_window"`
+			Slots    []scheduler.TimeSlot `json:"slots"`
 		}{
 			Enabled:  a.scheduler.IsEnabled(),
 			InWindow: a.scheduler.IsInScheduledWindow(),
@@ -479,13 +484,27 @@ func (a *API) handleConfig(w http.ResponseWriter, r *http.Request) {
 func (a *API) handleSensorDiscover(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
-		sensors, err := a.sensors.DiscoverSensors()
+		// Try to use sensor discovery if available
+		discoverer, ok := a.temps.(core.SensorDiscoverer)
+		if !ok {
+			// No discovery available in this mode
+			jsonResponse(w, struct {
+				Sensors      []string `json:"sensors"`
+				HotOutletID  string   `json:"hot_outlet_id"`
+				ReturnLineID string   `json:"return_line_id"`
+			}{
+				Sensors: []string{},
+			})
+			return
+		}
+
+		sensors, err := discoverer.DiscoverSensors()
 		if err != nil {
 			jsonError(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
-		hotID, retID := a.sensors.GetSensorIDs()
+		hotID, retID := discoverer.GetSensorIDs()
 
 		response := struct {
 			Sensors      []string `json:"sensors"`
@@ -509,8 +528,15 @@ func (a *API) handleSensorDiscover(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
+		// Try to update sensor IDs if discovery is available
+		discoverer, ok := a.temps.(core.SensorDiscoverer)
+		if !ok {
+			jsonError(w, "Sensor configuration not available in this mode", http.StatusBadRequest)
+			return
+		}
+
 		// Update sensor manager
-		a.sensors.SetSensorIDs(req.HotOutletID, req.ReturnLineID)
+		discoverer.SetSensorIDs(req.HotOutletID, req.ReturnLineID)
 
 		// Persist to config
 		err := a.config.Update(func(cfg *config.Config) {
@@ -531,6 +557,25 @@ func (a *API) handleSensorDiscover(w http.ResponseWriter, r *http.Request) {
 	default:
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 	}
+}
+
+// GetTemperatureProvider returns the temperature provider for use by other components.
+func (a *API) GetTemperatureProvider() core.TemperatureProvider {
+	return a.temps
+}
+
+// GetDemandDetector returns the demand detector for use by other components.
+func (a *API) GetDemandDetector() core.DemandDetector {
+	return a.demand
+}
+
+// GetLocalFlowMeter returns the underlying flow meter if using local hardware.
+// Returns nil if not available (e.g., in controller mode with remote sensors).
+func (a *API) GetLocalFlowMeter() *hardware.FlowMeter {
+	if detector, ok := a.demand.(*hardware.LocalDemandDetector); ok {
+		return detector.Underlying()
+	}
+	return nil
 }
 
 // jsonResponse writes a JSON response

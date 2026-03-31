@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/smartplug/smartplug/internal/config"
-	"github.com/smartplug/smartplug/internal/hardware"
+	"github.com/smartplug/smartplug/internal/core"
 )
 
 // PumpState represents the pump controller state
@@ -78,10 +78,10 @@ type PumpEvent struct {
 type PumpController struct {
 	mu sync.RWMutex
 
-	relay         *hardware.RelayController
-	sensors       *hardware.SensorManager
-	flowMeter     *hardware.FlowMeter
-	cfg           *config.PumpConfig
+	actuator core.PumpActuator
+	temps    core.TemperatureProvider
+	demand   core.DemandDetector
+	cfg      *config.PumpConfig
 
 	state            PumpState
 	lastTrigger      TriggerSource
@@ -98,32 +98,33 @@ type PumpController struct {
 	manualMode bool
 }
 
-// NewPumpController creates a new pump controller
+// NewPumpController creates a new pump controller using interface-based dependencies.
+// This constructor supports both local hardware and remote MQTT implementations.
 func NewPumpController(
-	relay *hardware.RelayController,
-	sensors *hardware.SensorManager,
-	flowMeter *hardware.FlowMeter,
+	actuator core.PumpActuator,
+	temps core.TemperatureProvider,
+	demand core.DemandDetector,
 	cfg *config.PumpConfig,
 ) *PumpController {
 	return &PumpController{
-		relay:     relay,
-		sensors:   sensors,
-		flowMeter: flowMeter,
-		cfg:       cfg,
-		state:     StateIdle,
-		stopChan:  make(chan struct{}),
-		enabled:   true,
+		actuator: actuator,
+		temps:    temps,
+		demand:   demand,
+		cfg:      cfg,
+		state:    StateIdle,
+		stopChan: make(chan struct{}),
+		enabled:  true,
 	}
 }
 
 // Start begins pump control operations
 func (pc *PumpController) Start() {
-	// Register for sensor readings
-	pc.sensors.OnReading(pc.onTemperatureReading)
+	// Register for temperature readings
+	pc.temps.OnReading(pc.onTemperatureReading)
 
-	// Register for flow meter demand
-	if pc.flowMeter != nil {
-		pc.flowMeter.OnDemand(pc.onDemandChange)
+	// Register for demand detection if available
+	if pc.demand != nil {
+		pc.demand.OnDemand(pc.onDemandChange)
 	}
 
 	// Start control loop
@@ -135,7 +136,7 @@ func (pc *PumpController) Stop() {
 	close(pc.stopChan)
 
 	// Ensure pump is off
-	if err := pc.relay.TurnOff(); err != nil {
+	if err := pc.actuator.TurnOff(); err != nil {
 		log.Printf("Error turning off pump during shutdown: %v", err)
 	}
 }
@@ -155,7 +156,7 @@ func (pc *PumpController) Disable() {
 	pc.mu.Unlock()
 
 	// Turn off pump if running
-	if err := pc.relay.TurnOff(); err != nil {
+	if err := pc.actuator.TurnOff(); err != nil {
 		log.Printf("Error turning off pump: %v", err)
 	}
 
@@ -227,14 +228,14 @@ func (pc *PumpController) GetStatus() PumpStatus {
 	pc.mu.RLock()
 	defer pc.mu.RUnlock()
 
-	hot, ret := pc.sensors.GetCurrentReadings()
+	hot, ret := pc.temps.GetCurrentReadings()
 
 	status := PumpStatus{
-		State:           pc.state,
-		Enabled:         pc.enabled,
-		IsRunning:       pc.relay.IsOn(),
-		LastTrigger:     pc.lastTrigger,
-		HotTemperature:  hot.Temperature,
+		State:             pc.state,
+		Enabled:           pc.enabled,
+		IsRunning:         pc.actuator.IsOn(),
+		LastTrigger:       pc.lastTrigger,
+		HotTemperature:    hot.Temperature,
 		ReturnTemperature: ret.Temperature,
 	}
 
@@ -281,7 +282,7 @@ func (pc *PumpController) OnEvent(callback func(event PumpEvent)) {
 }
 
 // onTemperatureReading handles temperature updates
-func (pc *PumpController) onTemperatureReading(hot, ret hardware.TemperatureReading) {
+func (pc *PumpController) onTemperatureReading(hot, ret core.TemperatureReading) {
 	pc.mu.Lock()
 	defer pc.mu.Unlock()
 
@@ -353,7 +354,7 @@ func (pc *PumpController) startPump(trigger TriggerSource) error {
 		return fmt.Errorf("pump in cooldown")
 	}
 
-	if err := pc.relay.TurnOn(); err != nil {
+	if err := pc.actuator.TurnOn(); err != nil {
 		return fmt.Errorf("failed to turn on pump: %w", err)
 	}
 
@@ -366,13 +367,13 @@ func (pc *PumpController) startPump(trigger TriggerSource) error {
 
 // stopPump deactivates the pump
 func (pc *PumpController) stopPump() error {
-	if err := pc.relay.TurnOff(); err != nil {
+	if err := pc.actuator.TurnOff(); err != nil {
 		return fmt.Errorf("failed to turn off pump: %w", err)
 	}
 
 	// Record event
 	if pc.state == StateHeating {
-		hot, ret := pc.sensors.GetCurrentReadings()
+		hot, ret := pc.temps.GetCurrentReadings()
 		event := PumpEvent{
 			Timestamp:    pc.heatingStartTime,
 			Trigger:      pc.lastTrigger,
@@ -450,4 +451,22 @@ func (pc *PumpController) UpdateConfig(cfg *config.PumpConfig) {
 	pc.mu.Lock()
 	defer pc.mu.Unlock()
 	pc.cfg = cfg
+}
+
+// GetTemperatureProvider returns the temperature provider.
+// This is useful for accessing sensor discovery features.
+func (pc *PumpController) GetTemperatureProvider() core.TemperatureProvider {
+	return pc.temps
+}
+
+// GetDemandDetector returns the demand detector.
+// This is useful for accessing flow meter features.
+func (pc *PumpController) GetDemandDetector() core.DemandDetector {
+	return pc.demand
+}
+
+// GetActuator returns the pump actuator.
+// This is useful for accessing relay statistics.
+func (pc *PumpController) GetActuator() core.PumpActuator {
+	return pc.actuator
 }

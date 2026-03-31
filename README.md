@@ -11,6 +11,7 @@ An open-source, sub-$60 alternative to commercial hot water recirculation contro
 - **Mobile-Responsive Web UI** - PWA that works as a home screen app
 - **REST API** - Full API for automation
 - **MQTT / Home Assistant** - Native integration with auto-discovery
+- **Flexible Deployment** - All-in-one or distributed sensor/controller architecture
 
 ## Bill of Materials (~$60)
 
@@ -154,6 +155,33 @@ mqtt:
   password: "mqtt_pass"
   ha_discovery: true
 ```
+
+## Deployment Modes
+
+SmartPlug supports three deployment modes for different hardware configurations:
+
+| Mode | Description |
+|------|-------------|
+| **all-in-one** | Default. Single Pi with sensors, flow meter, and relay connected directly |
+| **sensor** | Sensor node that publishes readings via MQTT. No pump control |
+| **controller** | Receives sensor data via MQTT, controls pump via MQTT or local relay |
+
+### Distributed Example
+
+```yaml
+# Sensor node (at water heater)
+deployment:
+  mode: sensor
+  node_id: "sensor-kitchen"
+
+# Controller (on Home Assistant or separate device)
+deployment:
+  mode: controller
+  sensor_node_ids: ["sensor-kitchen"]
+  actuator_type: mqtt
+```
+
+See [docs/DEPLOYMENT_MODES.md](docs/DEPLOYMENT_MODES.md) for detailed configuration and MQTT message formats.
 
 ## API Reference
 

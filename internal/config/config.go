@@ -12,6 +12,7 @@ import (
 
 // Config represents the complete application configuration
 type Config struct {
+	Deployment DeploymentConfig `yaml:"deployment"`
 	Hardware   HardwareConfig   `yaml:"hardware"`
 	Sensors    SensorsConfig    `yaml:"sensors"`
 	Pump       PumpConfig       `yaml:"pump"`
@@ -21,6 +22,30 @@ type Config struct {
 	MQTT       MQTTConfig       `yaml:"mqtt"`
 	Logging    LoggingConfig    `yaml:"logging"`
 	System     SystemConfig     `yaml:"system"`
+}
+
+// DeploymentConfig defines the deployment mode and distributed settings
+type DeploymentConfig struct {
+	// Mode specifies how SmartPlug operates:
+	// - "all-in-one": Single device with local GPIO sensors, flow meter, and relay (default)
+	// - "sensor": Sensor node that publishes readings over MQTT (no pump control)
+	// - "controller": Controller that receives MQTT sensor data and controls pump via MQTT
+	Mode string `yaml:"mode"`
+
+	// NodeID is the unique identifier for this node (required for sensor/controller modes)
+	NodeID string `yaml:"node_id"`
+
+	// SensorNodeIDs lists the sensor nodes to subscribe to (controller mode only)
+	SensorNodeIDs []string `yaml:"sensor_node_ids"`
+
+	// ActuatorType specifies how the pump is controlled in controller mode:
+	// - "local": Direct GPIO control (local relay)
+	// - "mqtt": Send commands over MQTT to a smart plug or actuator node
+	ActuatorType string `yaml:"actuator_type"`
+
+	// DataTimeout is how long (in seconds) before sensor data is considered stale
+	// Default: 30 seconds
+	DataTimeout int `yaml:"data_timeout"`
 }
 
 // HardwareConfig defines GPIO pin assignments
@@ -198,6 +223,17 @@ func (m *Manager) Update(fn func(*Config)) error {
 
 // applyDefaults sets default values for unspecified configuration
 func applyDefaults(cfg *Config) {
+	// Deployment defaults
+	if cfg.Deployment.Mode == "" {
+		cfg.Deployment.Mode = "all-in-one"
+	}
+	if cfg.Deployment.DataTimeout == 0 {
+		cfg.Deployment.DataTimeout = 30
+	}
+	if cfg.Deployment.ActuatorType == "" {
+		cfg.Deployment.ActuatorType = "local"
+	}
+
 	// Hardware defaults
 	if cfg.Hardware.OneWireGPIO == 0 {
 		cfg.Hardware.OneWireGPIO = 4

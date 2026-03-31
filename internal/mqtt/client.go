@@ -11,6 +11,7 @@ import (
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 	"github.com/smartplug/smartplug/internal/config"
 	"github.com/smartplug/smartplug/internal/controller"
+	"github.com/smartplug/smartplug/internal/core"
 	"github.com/smartplug/smartplug/internal/hardware"
 )
 
@@ -18,14 +19,18 @@ import (
 type Client struct {
 	mu sync.RWMutex
 
-	client      mqtt.Client
-	cfg         *config.MQTTConfig
-	connected   bool
+	client    mqtt.Client
+	cfg       *config.MQTTConfig
+	connected bool
 
-	// References for publishing state
-	pump     *controller.PumpController
-	sensors  *hardware.SensorManager
-	flowMeter *hardware.FlowMeter
+	// References for publishing state (interface-based)
+	pump   *controller.PumpController
+	temps  core.TemperatureProvider
+	demand core.DemandDetector
+
+	// Legacy references for backward compatibility
+	legacySensors   *hardware.SensorManager
+	legacyFlowMeter *hardware.FlowMeter
 
 	// Command handlers
 	commandHandler func(command string) error
@@ -41,13 +46,31 @@ func NewClient(cfg *config.MQTTConfig) *Client {
 	}
 }
 
-// SetReferences sets references to components for state publishing
+// SetReferences sets references to components for state publishing (legacy method).
+// Deprecated: Use SetReferencesWithInterfaces instead.
 func (c *Client) SetReferences(pump *controller.PumpController, sensors *hardware.SensorManager, flowMeter *hardware.FlowMeter) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	c.pump = pump
-	c.sensors = sensors
-	c.flowMeter = flowMeter
+	c.legacySensors = sensors
+	c.legacyFlowMeter = flowMeter
+
+	// Also set interface references if available
+	if sensors != nil {
+		c.temps = hardware.NewLocalTemperatureProvider(sensors)
+	}
+	if flowMeter != nil {
+		c.demand = hardware.NewLocalDemandDetector(flowMeter)
+	}
+}
+
+// SetReferencesWithInterfaces sets references using interface types.
+func (c *Client) SetReferencesWithInterfaces(pump *controller.PumpController, temps core.TemperatureProvider, demand core.DemandDetector) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.pump = pump
+	c.temps = temps
+	c.demand = demand
 }
 
 // SetCommandHandler sets the handler for pump commands
@@ -209,11 +232,11 @@ func (c *Client) publishLoop() {
 func (c *Client) publishState() {
 	c.mu.RLock()
 	pump := c.pump
-	sensors := c.sensors
-	flowMeter := c.flowMeter
+	temps := c.temps
+	demand := c.demand
 	c.mu.RUnlock()
 
-	if pump == nil || sensors == nil {
+	if pump == nil || temps == nil {
 		return
 	}
 
@@ -225,7 +248,7 @@ func (c *Client) publishState() {
 	c.publish("pump/state", pumpState)
 
 	// Publish temperatures
-	hot, ret := sensors.GetCurrentReadings()
+	hot, ret := temps.GetCurrentReadings()
 	if hot.Valid {
 		c.publish("temperature/hot", fmt.Sprintf("%.1f", hot.Temperature))
 	}
@@ -237,12 +260,14 @@ func (c *Client) publishState() {
 	}
 
 	// Publish flow meter state
-	if flowMeter != nil {
-		flowActive := "OFF"
-		if flowMeter.IsFlowActive() {
-			flowActive = "ON"
+	flowActive := false
+	if demand != nil {
+		flowActive = demand.IsFlowActive()
+		flowState := "OFF"
+		if flowActive {
+			flowState = "ON"
 		}
-		c.publish("flow/active", flowActive)
+		c.publish("flow/active", flowState)
 	}
 
 	// Publish controller state
@@ -257,7 +282,7 @@ func (c *Client) publishState() {
 		"enabled":     status.Enabled,
 		"hot_temp":    hot.Temperature,
 		"return_temp": ret.Temperature,
-		"flow_active": flowMeter != nil && flowMeter.IsFlowActive(),
+		"flow_active": flowActive,
 	})
 	c.publish("state", string(stateJSON))
 }
@@ -285,8 +310,14 @@ func (c *Client) publishRetained(topic, payload string) {
 	token.Wait()
 }
 
-// PublishEvent publishes a pump event
+// PublishEvent publishes a pump event (legacy method name).
+// Deprecated: Use PublishPumpEvent instead.
 func (c *Client) PublishEvent(event controller.PumpEvent) {
+	c.PublishPumpEvent(event)
+}
+
+// PublishPumpEvent publishes a pump event
+func (c *Client) PublishPumpEvent(event controller.PumpEvent) {
 	eventJSON, _ := json.Marshal(map[string]interface{}{
 		"timestamp":    event.Timestamp.Format(time.RFC3339),
 		"trigger":      event.Trigger.String(),
