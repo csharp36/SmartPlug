@@ -325,6 +325,118 @@ hardware:
 }
 ```
 
+## Home Assistant Green Deployment
+
+The [Home Assistant Green](https://ameridroid.com/products/home-assistant-green) is an ideal device for running the SmartPlug controller. It's a dedicated Home Assistant appliance with:
+
+- Quad-core ARM processor
+- 4GB RAM, 32GB eMMC storage
+- Gigabit Ethernet
+- Built-in MQTT broker (Mosquitto add-on)
+- Always-on, low power consumption
+
+### Architecture with HA Green
+
+```
+┌──────────────────────┐        MQTT        ┌─────────────────────────┐
+│   Sensor Node (Pi)   │ ────────────────► │   Home Assistant Green   │
+│   at water heater    │                    │                          │
+│                      │                    │  ┌─────────────────────┐ │
+│  DS18B20 sensors     │                    │  │ Mosquitto Broker    │ │
+│  Flow meter          │                    │  └──────────┬──────────┘ │
+└──────────────────────┘                    │             │            │
+                                            │  ┌──────────▼──────────┐ │
+                                            │  │ SmartPlug Controller│ │
+                                            │  │ (container/add-on)  │ │
+                                            │  └──────────┬──────────┘ │
+                                            │             │            │
+                                            │  ┌──────────▼──────────┐ │
+                                            │  │ HA Automations      │ │
+                                            │  │ Smart Plug Control  │ │
+                                            │  └─────────────────────┘ │
+                                            └─────────────────────────┘
+```
+
+### Setup Steps
+
+1. **Install Mosquitto broker** (if not already installed):
+   - Go to Settings → Add-ons → Add-on Store
+   - Install "Mosquitto broker"
+   - Configure a username/password
+
+2. **Run SmartPlug controller** as a container or standalone binary:
+
+   ```bash
+   # SSH into Home Assistant
+   # Download the controller binary
+   curl -LO https://github.com/smartplug/smartplug/releases/latest/download/smartplug-linux-arm64.tar.gz
+   tar xzf smartplug-linux-arm64.tar.gz
+   ```
+
+3. **Configure for HA Green**:
+
+   ```yaml
+   # /config/smartplug/smartplug.yaml
+
+   deployment:
+     mode: controller
+     sensor_node_ids:
+       - "sensor-kitchen"
+     actuator_type: mqtt
+     data_timeout: 30
+
+   pump:
+     start_threshold: 12.0
+     stop_threshold: 8.0
+     max_runtime_minutes: 15
+     cooldown_minutes: 5
+
+   web:
+     address: ":8080"
+
+   mqtt:
+     enabled: true
+     broker: "tcp://localhost:1883"    # Mosquitto runs locally
+     username: "mqtt_user"             # Your Mosquitto credentials
+     password: "mqtt_pass"
+     topic_prefix: "smartplug"
+     ha_discovery: true                # Auto-creates HA entities
+
+   system:
+     data_dir: "/config/smartplug/data"
+   ```
+
+4. **Control your smart plug** via Home Assistant:
+   - The controller publishes commands to `smartplug/pump/command`
+   - Use an HA automation to bridge to your actual smart plug (Kasa, Tapo, Shelly, Zigbee, etc.)
+
+### Why HA Green for the Controller?
+
+| Benefit | Description |
+|---------|-------------|
+| **Always on** | Dedicated appliance, no desktop/laptop needed |
+| **Local MQTT** | Mosquitto broker runs on same device, minimal latency |
+| **HA Integration** | Native entities via MQTT discovery |
+| **Central location** | Often in network closet, away from water heater |
+| **No GPIO needed** | Controller only needs network, not hardware access |
+
+### Sensor Node Setup
+
+Your Raspberry Pi at the water heater runs as a sensor node:
+
+```yaml
+# On the Pi at water heater
+deployment:
+  mode: sensor
+  node_id: "sensor-kitchen"
+
+mqtt:
+  enabled: true
+  broker: "tcp://homeassistant.local:1883"   # Point to HA Green
+  username: "mqtt_user"
+  password: "mqtt_pass"
+```
+
 ## Smart Plug Integration
 
 For WiFi smart plugs, you'll need a bridge that:
